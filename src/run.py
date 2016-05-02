@@ -1,6 +1,5 @@
 from PIL import Image
 import numpy as np
-import matplotlib.pyplot as plt
 from random import shuffle
 
 import theano 
@@ -93,30 +92,9 @@ for f in os.listdir('../data/labeled_scaled'):
 	file_prefixes.append(f[:-4])
 
 shuffle(file_prefixes)
-
+NUM_EPOCHS = 1
 print 'Starting CNN training ...'
-p_width = 4
-print '##########################################'
-print 'For patch width: ', p_width
-x, y = generate_data(file_prefixes[:], p_width)
-train_x, train_y = shared_dataset((x[0:(3*len(x)/5)], y[0:(3*len(y)/5)]))
-valid_x, valid_y = shared_dataset((x[(3*len(x)/5):(4*len(x)/5)], y[3*len(y)/5:4*len(y)]))
-test_x, test_y = shared_dataset((x[(4*len(x)/5):len(x)], y[(4*len(y)/5):len(y)]))
-net_x = shared_data_x(x)
-trainConvNet((train_x, train_y, test_x, test_y, valid_x, valid_y), p_width, 50, [5, 10])
-rep4 = represent(net_x[:], net_x.shape.eval()[0], p_width)
-
-p_width = 10
-print '##########################################'
-print 'For patch width: ', p_width
-x, y = generate_data(file_prefixes[:], p_width)
-train_x, train_y = shared_dataset((x[0:(3*len(x)/5)], y[0:(3*len(y)/5)]))
-valid_x, valid_y = shared_dataset((x[(3*len(x)/5):(4*len(x)/5)], y[3*len(y)/5:4*len(y)]))
-test_x, test_y = shared_dataset((x[(4*len(x)/5):len(x)], y[(4*len(y)/5):len(y)]))
-net_x = shared_data_x(x)
-trainConvNet((train_x, train_y, test_x, test_y, valid_x, valid_y), p_width, 50, [5, 10])
-rep10 = represent(net_x[:], net_x.shape.eval()[0], p_width)
-
+'''
 p_width = 14
 print '##########################################'
 print 'For patch width: ', p_width
@@ -126,8 +104,8 @@ valid_x, valid_y = shared_dataset((x[(3*len(x)/5):(4*len(x)/5)], y[3*len(y)/5:4*
 test_x, test_y = shared_dataset((x[(4*len(x)/5):len(x)], y[(4*len(y)/5):len(y)]))
 net_x = shared_data_x(x)
 trainConvNet((train_x, train_y, test_x, test_y, valid_x, valid_y), p_width, 50, [5, 10])
-rep14 = represent(net_x[:], net_x.shape.eval()[0], p_width)
-
+rep4 = represent(net_x[:], net_x.shape.eval()[0], p_width)
+'''
 p_width = 20
 print '##########################################'
 print 'For patch width: ', p_width
@@ -136,7 +114,29 @@ train_x, train_y = shared_dataset((x[0:(3*len(x)/5)], y[0:(3*len(y)/5)]))
 valid_x, valid_y = shared_dataset((x[(3*len(x)/5):(4*len(x)/5)], y[3*len(y)/5:4*len(y)]))
 test_x, test_y = shared_dataset((x[(4*len(x)/5):len(x)], y[(4*len(y)/5):len(y)]))
 net_x = shared_data_x(x)
-trainConvNet((train_x, train_y, test_x, test_y, valid_x, valid_y), p_width, 50, [5, 10])
+trainConvNet((train_x, train_y, test_x, test_y, valid_x, valid_y), p_width, NUM_EPOCHS, [5, 10])
+rep10 = represent(net_x[:], net_x.shape.eval()[0], p_width)
+
+p_width = 24
+print '##########################################'
+print 'For patch width: ', p_width
+x, y = generate_data(file_prefixes[:], p_width)
+train_x, train_y = shared_dataset((x[0:(3*len(x)/5)], y[0:(3*len(y)/5)]))
+valid_x, valid_y = shared_dataset((x[(3*len(x)/5):(4*len(x)/5)], y[3*len(y)/5:4*len(y)]))
+test_x, test_y = shared_dataset((x[(4*len(x)/5):len(x)], y[(4*len(y)/5):len(y)]))
+net_x = shared_data_x(x)
+trainConvNet((train_x, train_y, test_x, test_y, valid_x, valid_y), p_width, NUM_EPOCHS, [5, 10])
+rep14 = represent(net_x[:], net_x.shape.eval()[0], p_width)
+
+p_width = 30
+print '##########################################'
+print 'For patch width: ', p_width
+x, y = generate_data(file_prefixes[:], p_width)
+train_x, train_y = shared_dataset((x[0:(3*len(x)/5)], y[0:(3*len(y)/5)]))
+valid_x, valid_y = shared_dataset((x[(3*len(x)/5):(4*len(x)/5)], y[3*len(y)/5:4*len(y)]))
+test_x, test_y = shared_dataset((x[(4*len(x)/5):len(x)], y[(4*len(y)/5):len(y)]))
+net_x = shared_data_x(x)
+trainConvNet((train_x, train_y, test_x, test_y, valid_x, valid_y), p_width, NUM_EPOCHS, [5, 10])
 rep20 = represent(net_x[:], net_x.shape.eval()[0], p_width)
 
 print '##########################################'
@@ -145,8 +145,8 @@ print 'Starting RNN training ...'
 RANGE_CAP = 5
 for fold in range(RANGE_CAP):
 	print 'FOLD ', fold, ':- '
-	train_x4 = shared_data_x(np.concatenate((rep4[:fold*rep4.shape[0]/RANGE_CAP], rep4[(fold+1)*rep4.shape[0]/RANGE_CAP:])))
-	test_x4 = shared_data_x(rep4[(fold*rep4.shape[0]/RANGE_CAP):((fold+1)*rep4.shape[0]/RANGE_CAP)])
+	#train_x4 = shared_data_x(np.concatenate((rep4[:fold*rep4.shape[0]/RANGE_CAP], rep4[(fold+1)*rep4.shape[0]/RANGE_CAP:])))
+	#test_x4 = shared_data_x(rep4[(fold*rep4.shape[0]/RANGE_CAP):((fold+1)*rep4.shape[0]/RANGE_CAP)])
 
 	train_x10 = shared_data_x(np.concatenate((rep10[:fold*rep10.shape[0]/RANGE_CAP], rep10[(fold+1)*rep10.shape[0]/RANGE_CAP:])))
 	test_x10 = shared_data_x(rep10[(fold*rep10.shape[0]/RANGE_CAP):((fold+1)*rep10.shape[0]/RANGE_CAP)])
@@ -154,13 +154,22 @@ for fold in range(RANGE_CAP):
 	train_x14 = shared_data_x(np.concatenate((rep14[:fold*rep14.shape[0]/RANGE_CAP], rep14[(fold+1)*rep14.shape[0]/RANGE_CAP:])))
 	test_x14 = shared_data_x(rep14[(fold*rep14.shape[0]/RANGE_CAP):((fold+1)*rep14.shape[0]/RANGE_CAP)])
 
-	train_x = (train_x4, train_x10, train_x14)
-	test_x = (test_x4, test_x10, test_x14)
+	train_x20 = shared_data_x(np.concatenate((rep20[:fold*rep20.shape[0]/RANGE_CAP], rep20[(fold+1)*rep20.shape[0]/RANGE_CAP:])))
+	test_x20 = shared_data_x(rep20[(fold*rep20.shape[0]/RANGE_CAP):((fold+1)*rep20.shape[0]/RANGE_CAP)])
+
+	#amend to include rep20
+
+	#train_x = (train_x4, train_x10, train_x14, train_x20)
+	#test_x = (test_x4, test_x10, test_x14, test_x20)
+	train_x = (train_x10, train_x14, train_x20)
+	test_x = (test_x10, test_x14, test_x20)
 
 	train_y = shared_data_y(y[:(4*len(y)/RANGE_CAP)])
 	test_y = shared_data_y(y[(4*len(y)/RANGE_CAP):])
 
-	trainRecNet((train_x, train_y), 90, 50, n_recurrences=3)
+	NINETY = 640
+
+	trainRecNet((train_x, train_y), inp_dim=NINETY, n_epochs=NUM_EPOCHS, n_recurrences=3)
 	with open("output.txt", "a") as f:
 		#f.write("testx : " + str(test_x) + "\n\n")
 		#f.write("testx1: " + str(test_x[0].shape) + "\n\n")
@@ -171,7 +180,7 @@ for fold in range(RANGE_CAP):
 		#f.write(str(test_y[1]) + "\n\n")
 		#f.write(str(test_y.shape) + "\n\n")
 		#f.write(str(test_y.eval()) + "\n\n")
-		pred = evaluate((test_x, test_y), 90, n_recurrences=3)
+		pred = evaluate((test_x, test_y), inp_dim=NINETY, n_recurrences=3)
 		#f.write("pred: " + str(pred) + "\n\n")
 
 	# evaluation

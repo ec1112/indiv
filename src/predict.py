@@ -174,29 +174,32 @@ def shared_data_x(data_x):
 
 
 #-------------------------
+img_slice = "image_transducer0_3D_t1450441616987_layer0_s_57"
+
+'''
 p_width = 4
-x, _ = generate_data(["image_transducer0_3D_t1450441616987_layer0_s_50"], p_width)
+x, _ = generate_data([img_slice], p_width)
 #test_x = theano.shared(np.asarray(x[(4*len(x)/5):len(x)], dtype=theano.config.floatX), borrow=True)
 net_x = theano.shared(np.asarray(x, dtype=theano.config.floatX), borrow=True)
 rep4 = represent(net_x[:], net_x.shape.eval()[0], p_width)
-
-p_width = 10
-x, _ = generate_data(["image_transducer0_3D_t1450441616987_layer0_s_50"], p_width)
-#x = theano.shared(np.asarray(x[(4*len(x)/5):len(x)], dtype=theano.config.floatX), borrow=True)
-net_x = theano.shared(np.asarray(x, dtype=theano.config.floatX), borrow=True)
-rep10 = represent(net_x[:], net_x.shape.eval()[0], p_width)
-
-p_width = 14
-x, _ = generate_data(["image_transducer0_3D_t1450441616987_layer0_s_50"], p_width)
-#x = theano.shared(np.asarray(x[(4*len(x)/5):len(x)], dtype=theano.config.floatX), borrow=True)
-net_x = theano.shared(np.asarray(x, dtype=theano.config.floatX), borrow=True)
-rep14 = represent(net_x[:], net_x.shape.eval()[0], p_width)
-
+'''
 p_width = 20
-x, _ = generate_data(["image_transducer0_3D_t1450441616987_layer0_s_50"], p_width)
+x, _ = generate_data([img_slice], p_width)
 #x = theano.shared(np.asarray(x[(4*len(x)/5):len(x)], dtype=theano.config.floatX), borrow=True)
 net_x = theano.shared(np.asarray(x, dtype=theano.config.floatX), borrow=True)
 rep20 = represent(net_x[:], net_x.shape.eval()[0], p_width)
+
+p_width = 24
+x, _ = generate_data([img_slice], p_width)
+#x = theano.shared(np.asarray(x[(4*len(x)/5):len(x)], dtype=theano.config.floatX), borrow=True)
+net_x = theano.shared(np.asarray(x, dtype=theano.config.floatX), borrow=True)
+rep24 = represent(net_x[:], net_x.shape.eval()[0], p_width)
+
+p_width = 30
+x, _ = generate_data([img_slice], p_width)
+#x = theano.shared(np.asarray(x[(4*len(x)/5):len(x)], dtype=theano.config.floatX), borrow=True)
+net_x = theano.shared(np.asarray(x, dtype=theano.config.floatX), borrow=True)
+rep30 = represent(net_x[:], net_x.shape.eval()[0], p_width)
 
 #---------------------
 
@@ -222,15 +225,15 @@ for fold in range(5):
 '''
 RANGE_CAP = 1
 for fold in range(RANGE_CAP):
-    x4 = shared_data_x(rep4[(fold*rep4.shape[0]/RANGE_CAP):((fold+1)*rep4.shape[0]/RANGE_CAP)])
-    x10 = shared_data_x(rep10[(fold*rep10.shape[0]/RANGE_CAP):((fold+1)*rep10.shape[0]/RANGE_CAP)])
-    x14 = shared_data_x(rep14[(fold*rep14.shape[0]/RANGE_CAP):((fold+1)*rep14.shape[0]/RANGE_CAP)])
-    x = (x4, x10, x14)
+    x20 = shared_data_x(rep20[(fold*rep20.shape[0]/RANGE_CAP):((fold+1)*rep20.shape[0]/RANGE_CAP)])
+    x24 = shared_data_x(rep24[(fold*rep24.shape[0]/RANGE_CAP):((fold+1)*rep24.shape[0]/RANGE_CAP)])
+    x30 = shared_data_x(rep30[(fold*rep30.shape[0]/RANGE_CAP):((fold+1)*rep30.shape[0]/RANGE_CAP)])
+    x = (x20, x24, x30)
 
     with open("predictions.txt", "a") as f:
         preds = evaluate(x, n_recurrences=3)
-        f.write("*"*50 + "\n\n")
-        f.write("FOLD " + str(fold) + "\n\n")
+        #f.write("*"*50 + "\n\n")
+        #f.write("FOLD " + str(fold) + "\n\n")
         
         pred_shape = np.array(preds).shape
         for i in range(pred_shape[0]):
@@ -239,8 +242,10 @@ for fold in range(RANGE_CAP):
         preds_list += preds
 
 arr = np.array(preds_list)
-arr.transpose((1, 0))
+arr.transpose()
 arr.resize(288, 275)
+arr = np.rot90(arr)
+arr = arr[::-1]
 #arr = np.append(arr[:58], np.append(np.fliplr(arr[58:115]), arr[115:], axis=0), axis=0)
 
 #with open("output.txt", "") as f:
@@ -249,7 +254,7 @@ arr.resize(288, 275)
 #        f.write("\n\n")
 #print arr.shape
 img = sitk.Cast(sitk.GetImageFromArray(arr), sitk.sitkUInt8)
-sitk.WriteImage(img, "/Users/elizabethcotton/Documents/indiv/rcnn/src/permute2.bmp")
+sitk.WriteImage(img, "/Users/elizabethcotton/Documents/indiv/rcnn/src/images/lord_almighty3_" + img_slice + "_segd.bmp")
 
 #---------------------
 

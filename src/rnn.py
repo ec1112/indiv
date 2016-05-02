@@ -8,8 +8,11 @@ import cPickle
 from mlp import HiddenLayer, HiddenLayer2
 from logistic_sgd import LogisticRegression
 
-def trainRecNet(data_xy, inp_dim = 90, n_epochs = 5, batch_size=500, learning_rate=0.1, n_recurrences=4):
+NINETY = 500
+THREE_HUNDRED = 300
+def trainRecNet(data_xy, inp_dim = NINETY, n_epochs = 5, batch_size=500, learning_rate=0.1, n_recurrences=4):
 	train_x, train_y = data_xy
+
 	n_train_batches = train_x[0].get_value(borrow=True).shape[0] / batch_size
 	print '...building the RNN model'
 	index = T.lscalar()
@@ -27,7 +30,7 @@ def trainRecNet(data_xy, inp_dim = 90, n_epochs = 5, batch_size=500, learning_ra
 				rng,
 				input=layer0,
 				n_in=inp_dim,
-				n_out=300,
+				n_out=THREE_HUNDRED,
 				activation=T.tanh
 			)
 				
@@ -40,8 +43,8 @@ def trainRecNet(data_xy, inp_dim = 90, n_epochs = 5, batch_size=500, learning_ra
 				input0=layer0,
 				input_1=layer_1_output,
 				n_in0=inp_dim,
-				n_in_1=300,
-				n_out=300,
+				n_in_1=THREE_HUNDRED,
+				n_out=THREE_HUNDRED,
 				U=layer_1.W,
 				W=None,
 				b=layer_1.b,
@@ -57,15 +60,15 @@ def trainRecNet(data_xy, inp_dim = 90, n_epochs = 5, batch_size=500, learning_ra
 				input0=layer0,
 				input_1=layer_1_output,
 				n_in0=inp_dim,
-				n_in_1=300,
-				n_out=300,
+				n_in_1=THREE_HUNDRED,
+				n_out=THREE_HUNDRED,
 				activation=T.tanh,
 				U=layer_1.U,
 				W=layer_1.W,
 				b=layer_1.b
 			)
 
-		layer2 = LogisticRegression(input=layer1.output, n_in=300, n_out=10)
+		layer2 = LogisticRegression(input=layer1.output, n_in=THREE_HUNDRED, n_out=10)
 
 		cost = layer2.negative_log_likelihood(y)
 
@@ -101,14 +104,14 @@ def trainRecNet(data_xy, inp_dim = 90, n_epochs = 5, batch_size=500, learning_ra
 	cPickle.dump(layer2.b.get_value(borrow=True), save_file, -1)
 	save_file.close()
 	
-def evaluate(data_xy, inp_dim=90, batch_size=500, n_recurrences=4):
+def evaluate(data_xy, inp_dim=NINETY, batch_size=500, n_recurrences=4):
 	test_x, test_y = data_xy
 	n_test_batches = test_x[0].get_value(borrow=True).shape[0] / batch_size
 
 	rng = numpy.random.RandomState(23455)
 	
 	W1 = theano.shared(numpy.asarray(rng.uniform(low=-1., high=-1., size=(300, 300)), dtype=theano.config.floatX), borrow=True)
-	U1 = theano.shared(numpy.asarray(rng.uniform(low=-1., high=-1., size=(90, 300)), dtype=theano.config.floatX), borrow=True)
+	U1 = theano.shared(numpy.asarray(rng.uniform(low=-1., high=-1., size=(NINETY, 300)), dtype=theano.config.floatX), borrow=True)
 	b1 = theano.shared(numpy.asarray(rng.uniform(low=-1., high=-1., size=(300,)), dtype=theano.config.floatX), borrow=True)
 	W2 = theano.shared(numpy.asarray(rng.uniform(low=-1., high=-1., size=(300, 10)), dtype=theano.config.floatX), borrow=True)
 	b2 = theano.shared(numpy.asarray(rng.uniform(low=-1., high=-1., size=(10, )), dtype=theano.config.floatX), borrow=True)
@@ -131,7 +134,7 @@ def evaluate(data_xy, inp_dim=90, batch_size=500, n_recurrences=4):
 	layer0 = HiddenLayer(
 		rng,
 		input = x,
-		n_in = 90,
+		n_in = NINETY,
 		n_out = 300,
 		W = U1,
 		b = b1,
@@ -148,7 +151,7 @@ def evaluate(data_xy, inp_dim=90, batch_size=500, n_recurrences=4):
 			rng,
 			input0 = test_x[i][index*batch_size: (index+1)*batch_size],
 			input_1 = inp,
-			n_in0 = 90,
+			n_in0 = NINETY,
 			n_in_1 = 300,
 			n_out = 300,
 			W = W1,

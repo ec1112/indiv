@@ -67,6 +67,7 @@ def represent(data_x, batch_size, patch_width=10, nkerns=[5, 10]):
 	pool0_dim = 2
 	pool1_dim = 1
 
+	'''
 	if patch_width==4:
 		kern0_dim = 2
 		kern1_dim = 1
@@ -90,7 +91,26 @@ def represent(data_x, batch_size, patch_width=10, nkerns=[5, 10]):
 		kern1_dim = 5
 		pool0_dim = 2
 		pool1_dim = 1
+	'''
 
+	if patch_width==20:
+		kern0_dim = 3
+		kern1_dim = 2
+		pool0_dim = 2
+		pool1_dim = 1
+
+	if patch_width==24:
+		kern0_dim = 5
+		kern1_dim = 3
+		pool0_dim = 2
+		pool1_dim = 1
+
+	if patch_width==30:
+		kern0_dim = 7
+		kern1_dim = 5
+		pool0_dim = 2
+		pool1_dim = 1
+	
 	rng = numpy.random.RandomState(23455)
 	W0 = theano.shared(numpy.asarray(rng.uniform(low=-1., high=-1., size=(nkerns[0], 3, kern0_dim, kern0_dim)), dtype=theano.config.floatX), borrow=True)
 	b0 = theano.shared(numpy.asarray(rng.uniform(low=-1., high=-1., size=(nkerns[0],)), dtype=theano.config.floatX), borrow=True)
@@ -138,6 +158,9 @@ def represent(data_x, batch_size, patch_width=10, nkerns=[5, 10]):
 	return f(data_x.eval())
 
 def trainConvNet(data_xy, inp_dim =10, n_epochs = 3, nkerns=[5, 10], batch_size=500, learning_rate=0.1):
+	#with open("metrics.txt", "a") as f:
+	#f.write("**********\n")
+	#f.write("Learning rate: {0}\n".format(learning_rate))
 	train_x, train_y, test_x, test_y, valid_x, valid_y = data_xy
 
 	n_train_batches = train_x.get_value(borrow=True).shape[0] / batch_size
@@ -150,29 +173,29 @@ def trainConvNet(data_xy, inp_dim =10, n_epochs = 3, nkerns=[5, 10], batch_size=
 	pool0_dim = 2
 	pool1_dim = 1
 
-	if inp_dim==4:
-		kern0_dim = 2
-		kern1_dim = 1
-		pool0_dim = 1
-		pool1_dim = 1
 
-	if inp_dim==10:
+
+	if inp_dim==20:
 		kern0_dim = 3
 		kern1_dim = 2
 		pool0_dim = 2
 		pool1_dim = 1
 
-	if inp_dim==14:
+	if inp_dim==24:
 		kern0_dim = 5
 		kern1_dim = 3
 		pool0_dim = 2
 		pool1_dim = 1
 
-	if inp_dim==20:
+	if inp_dim==30:
 		kern0_dim = 7
 		kern1_dim = 5
 		pool0_dim = 2
 		pool1_dim = 1
+	
+
+
+
 
 	index = T.lscalar()
 
@@ -252,6 +275,7 @@ def trainConvNet(data_xy, inp_dim =10, n_epochs = 3, nkerns=[5, 10], batch_size=
 	epoch = 0
 	done_looping = False
 
+	
 	while (epoch < n_epochs) and (not done_looping):
 		epoch = epoch + 1
 		for minibatch_index in xrange(n_train_batches):
@@ -264,7 +288,9 @@ def trainConvNet(data_xy, inp_dim =10, n_epochs = 3, nkerns=[5, 10], batch_size=
 				validation_losses = [validate_model(i) for i in xrange(n_valid_batches)]
 				this_validation_loss = numpy.mean(validation_losses)
 				print('epoch %i, minibatch %i/%i, validation error %f %%\n' %(epoch, minibatch_index + 1, n_train_batches, this_validation_loss * 100.))
-
+				#f.write("Epoch: {0}\n".format(epoch)) 
+				#f.write("Validation loss: {0}\n".format(this_validation_loss*100))
+				#f.write("Cost: {0}\n".format(cost_ij))
                 if this_validation_loss < best_validation_loss:
 
                     if this_validation_loss < best_validation_loss *  \
