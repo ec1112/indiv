@@ -158,173 +158,173 @@ def represent(data_x, batch_size, patch_width=10, nkerns=[5, 10]):
 	return f(data_x.eval())
 
 def trainConvNet(data_xy, inp_dim =10, n_epochs = 3, nkerns=[5, 10], batch_size=500, learning_rate=0.1):
-	#with open("metrics.txt", "a") as f:
-	#f.write("**********\n")
-	#f.write("Learning rate: {0}\n".format(learning_rate))
-	train_x, train_y, test_x, test_y, valid_x, valid_y = data_xy
+	with open("metrics.txt", "a") as f:
+		f.write("**********\n")
+		f.write("Learning rate: {0}\n".format(learning_rate))
+		train_x, train_y, test_x, test_y, valid_x, valid_y = data_xy
 
-	n_train_batches = train_x.get_value(borrow=True).shape[0] / batch_size
-	n_valid_batches = valid_x.get_value(borrow=True).shape[0] / batch_size
-	n_test_batches = test_x.get_value(borrow=True).shape[0] / batch_size
-	print '...building the model'
+		n_train_batches = train_x.get_value(borrow=True).shape[0] / batch_size
+		n_valid_batches = valid_x.get_value(borrow=True).shape[0] / batch_size
+		n_test_batches = test_x.get_value(borrow=True).shape[0] / batch_size
+		print '...building the model'
 
-	kern0_dim = 3
-	kern1_dim = 2
-	pool0_dim = 2
-	pool1_dim = 1
-
-
-
-	if inp_dim==20:
 		kern0_dim = 3
 		kern1_dim = 2
 		pool0_dim = 2
 		pool1_dim = 1
 
-	if inp_dim==24:
-		kern0_dim = 5
-		kern1_dim = 3
-		pool0_dim = 2
-		pool1_dim = 1
 
-	if inp_dim==30:
-		kern0_dim = 7
-		kern1_dim = 5
-		pool0_dim = 2
-		pool1_dim = 1
+
+		if inp_dim==20:
+			kern0_dim = 3
+			kern1_dim = 2
+			pool0_dim = 2
+			pool1_dim = 1
+
+		if inp_dim==24:
+			kern0_dim = 5
+			kern1_dim = 3
+			pool0_dim = 2
+			pool1_dim = 1
+
+		if inp_dim==30:
+			kern0_dim = 7
+			kern1_dim = 5
+			pool0_dim = 2
+			pool1_dim = 1
+		
+
+
+
+
+		index = T.lscalar()
+
+		x = T.tensor4('x')
+		y = T.ivector('y')
+		rng = numpy.random.RandomState(23455)
+
+		layer0_input = x.reshape((batch_size, THREE, inp_dim, inp_dim))
+
+		layer0 = LeNetConvPoolLayer(
+			rng, 
+			input = layer0_input,
+			image_shape=(batch_size, THREE, inp_dim, inp_dim),
+			filter_shape=(nkerns[0], 3, kern0_dim, kern0_dim),
+			poolsize=(pool0_dim, pool0_dim)
+		)
+
+		inp1_dim = (inp_dim-kern0_dim+1)/pool0_dim
+		layer1 = LeNetConvPoolLayer(
+			rng,
+			input = layer0.output,
+			image_shape=(batch_size, nkerns[0], inp1_dim, inp1_dim),
+			filter_shape=(nkerns[1], nkerns[0], kern1_dim, kern1_dim),
+			poolsize=(pool1_dim, pool1_dim)
+		)
+
+		layer2_input = layer1.output.flatten(2)
+
+		inp2_dim = (inp1_dim-kern1_dim+1)/pool1_dim
+		layer2 = HiddenLayer(
+			rng,
+			input=layer2_input,
+			n_in=nkerns[1]*inp2_dim*inp2_dim,
+			n_out=300,
+			activation=T.tanh
+		)
+
+		layer3 = LogisticRegression(input=layer2.output, n_in=300, n_out=10)
+		cost = layer3.negative_log_likelihood(y)
+
+
+		test_model = theano.function([index], layer3.errors(y), givens={
+				x: test_x[index*batch_size: (index+1)*batch_size],
+				y: test_y[index*batch_size: (index+1)*batch_size]
+			})
+
+		validate_model = theano.function([index], layer3.errors(y), givens={
+				x: valid_x[index*batch_size: (index+1)*batch_size],
+				y: valid_y[index*batch_size: (index+1)*batch_size]
+			})
+
+		params = layer3.params + layer2.params + layer1.params + layer0.params
+
+		grads  = T.grad(cost, params)
+
+		updates = [
+			(param_i, param_i - learning_rate * grad_i)
+			for param_i, grad_i in zip(params, grads)
+		] 
 	
+		train_model = theano.function([index], cost, updates=updates, givens={
+				x: train_x[index*batch_size: (index+1)*batch_size],
+				y: train_y[index*batch_size: (index+1)*batch_size]
+			})
 
+		print 'training... '
 
+		patience = 10000
+		patience_increase = 2
+		improvement_threshold = 0.995
+		validation_frequency = min(n_train_batches, patience / 2)
+		best_validation_loss = numpy.inf
+		best_iter = 0
+		test_score = 0.
+		start_time = timeit.default_timer()
 
+		epoch = 0
+		done_looping = False
 
-	index = T.lscalar()
+		
+		while (epoch < n_epochs) and (not done_looping):
+			epoch = epoch + 1
+			for minibatch_index in xrange(n_train_batches):
+				iter = (epoch - 1) * n_train_batches + minibatch_index
+				if iter % 100 == 0:
+					print 'training @ iter = ', iter
+				cost_ij = train_model(minibatch_index)
 
-	x = T.tensor4('x')
-	y = T.ivector('y')
-	rng = numpy.random.RandomState(23455)
+				if (iter + 1) % validation_frequency == 0:
+					validation_losses = [validate_model(i) for i in xrange(n_valid_batches)]
+					this_validation_loss = numpy.mean(validation_losses)
+					print('epoch %i, minibatch %i/%i, validation error %f %%\n' %(epoch, minibatch_index + 1, n_train_batches, this_validation_loss * 100.))
+					f.write("Epoch: {0}\n".format(epoch)) 
+					f.write("Validation loss: {0}\n".format(this_validation_loss*100))
+					f.write("Cost: {0}\n".format(cost_ij))
+	                if this_validation_loss < best_validation_loss:
 
-	layer0_input = x.reshape((batch_size, THREE, inp_dim, inp_dim))
+	                    if this_validation_loss < best_validation_loss *  \
+	                       improvement_threshold:
+	                        patience = max(patience, iter * patience_increase)
 
-	layer0 = LeNetConvPoolLayer(
-		rng, 
-		input = layer0_input,
-		image_shape=(batch_size, THREE, inp_dim, inp_dim),
-		filter_shape=(nkerns[0], 3, kern0_dim, kern0_dim),
-		poolsize=(pool0_dim, pool0_dim)
-	)
+	                    best_validation_loss = this_validation_loss
+	                    best_iter = iter
 
-	inp1_dim = (inp_dim-kern0_dim+1)/pool0_dim
-	layer1 = LeNetConvPoolLayer(
-		rng,
-		input = layer0.output,
-		image_shape=(batch_size, nkerns[0], inp1_dim, inp1_dim),
-		filter_shape=(nkerns[1], nkerns[0], kern1_dim, kern1_dim),
-		poolsize=(pool1_dim, pool1_dim)
-	)
+	                    test_losses = [
+	                        test_model(i)
+	                        for i in xrange(n_test_batches)
+	                    ]
+	                    test_score = numpy.mean(test_losses)
+	                    print(('     epoch %i, minibatch %i/%i, test error of ' 'best model %f %%') %(epoch, minibatch_index + 1, n_train_batches, test_score * 100.))
+	          	if patience<=iter:
+	          		done_looping=True
+	          		break
 
-	layer2_input = layer1.output.flatten(2)
+		end_time = timeit.default_timer()
+		print('Optimization complete.')
+		print('Best validation score of %f %% obtained at iteration %i, '
+	          'with test performance %f %%' %
+	          (best_validation_loss * 100., best_iter + 1, test_score * 100.))
+		print >> sys.stderr, ('The code for file ' +
+	                          os.path.split(__file__)[1] +
+	                          ' ran for %.2fm' % ((end_time - start_time) / 60.))
 
-	inp2_dim = (inp1_dim-kern1_dim+1)/pool1_dim
-	layer2 = HiddenLayer(
-		rng,
-		input=layer2_input,
-		n_in=nkerns[1]*inp2_dim*inp2_dim,
-		n_out=300,
-		activation=T.tanh
-	)
-
-	layer3 = LogisticRegression(input=layer2.output, n_in=300, n_out=10)
-	cost = layer3.negative_log_likelihood(y)
-
-
-	test_model = theano.function([index], layer3.errors(y), givens={
-			x: test_x[index*batch_size: (index+1)*batch_size],
-			y: test_y[index*batch_size: (index+1)*batch_size]
-		})
-
-	validate_model = theano.function([index], layer3.errors(y), givens={
-			x: valid_x[index*batch_size: (index+1)*batch_size],
-			y: valid_y[index*batch_size: (index+1)*batch_size]
-		})
-
-	params = layer3.params + layer2.params + layer1.params + layer0.params
-
-	grads  = T.grad(cost, params)
-
-	updates = [
-		(param_i, param_i - learning_rate * grad_i)
-		for param_i, grad_i in zip(params, grads)
-	] 
-
-	train_model = theano.function([index], cost, updates=updates, givens={
-			x: train_x[index*batch_size: (index+1)*batch_size],
-			y: train_y[index*batch_size: (index+1)*batch_size]
-		})
-
-	print 'training... '
-
-	patience = 10000
-	patience_increase = 2
-	improvement_threshold = 0.995
-	validation_frequency = min(n_train_batches, patience / 2)
-	best_validation_loss = numpy.inf
-	best_iter = 0
-	test_score = 0.
-	start_time = timeit.default_timer()
-
-	epoch = 0
-	done_looping = False
-
-	
-	while (epoch < n_epochs) and (not done_looping):
-		epoch = epoch + 1
-		for minibatch_index in xrange(n_train_batches):
-			iter = (epoch - 1) * n_train_batches + minibatch_index
-			if iter % 100 == 0:
-				print 'training @ iter = ', iter
-			cost_ij = train_model(minibatch_index)
-
-			if (iter + 1) % validation_frequency == 0:
-				validation_losses = [validate_model(i) for i in xrange(n_valid_batches)]
-				this_validation_loss = numpy.mean(validation_losses)
-				print('epoch %i, minibatch %i/%i, validation error %f %%\n' %(epoch, minibatch_index + 1, n_train_batches, this_validation_loss * 100.))
-				#f.write("Epoch: {0}\n".format(epoch)) 
-				#f.write("Validation loss: {0}\n".format(this_validation_loss*100))
-				#f.write("Cost: {0}\n".format(cost_ij))
-                if this_validation_loss < best_validation_loss:
-
-                    if this_validation_loss < best_validation_loss *  \
-                       improvement_threshold:
-                        patience = max(patience, iter * patience_increase)
-
-                    best_validation_loss = this_validation_loss
-                    best_iter = iter
-
-                    test_losses = [
-                        test_model(i)
-                        for i in xrange(n_test_batches)
-                    ]
-                    test_score = numpy.mean(test_losses)
-                    print(('     epoch %i, minibatch %i/%i, test error of ' 'best model %f %%') %(epoch, minibatch_index + 1, n_train_batches, test_score * 100.))
-          	if patience<=iter:
-          		done_looping=True
-          		break
-
-	end_time = timeit.default_timer()
-	print('Optimization complete.')
-	print('Best validation score of %f %% obtained at iteration %i, '
-          'with test performance %f %%' %
-          (best_validation_loss * 100., best_iter + 1, test_score * 100.))
-	print >> sys.stderr, ('The code for file ' +
-                          os.path.split(__file__)[1] +
-                          ' ran for %.2fm' % ((end_time - start_time) / 60.))
-
-	print ('saving params for patch width: %i...' %(inp_dim))
-	save_file = open('param'+str(inp_dim)+'.pkl', 'wb')
-	W0 = layer0.params[0]; b0 = layer0.params[1]
-	W1 = layer1.params[0]; b1 = layer1.params[1]
-	cPickle.dump(W0.get_value(borrow=True), save_file, -1)
-	cPickle.dump(b0.get_value(borrow=True), save_file, -1)
-	cPickle.dump(W1.get_value(borrow=True), save_file, -1)
-	cPickle.dump(b1.get_value(borrow=True), save_file, -1)
-	save_file.close()
+		print ('saving params for patch width: %i...' %(inp_dim))
+		save_file = open('param'+str(inp_dim)+'.pkl', 'wb')
+		W0 = layer0.params[0]; b0 = layer0.params[1]
+		W1 = layer1.params[0]; b1 = layer1.params[1]
+		cPickle.dump(W0.get_value(borrow=True), save_file, -1)
+		cPickle.dump(b0.get_value(borrow=True), save_file, -1)
+		cPickle.dump(W1.get_value(borrow=True), save_file, -1)
+		cPickle.dump(b1.get_value(borrow=True), save_file, -1)
+		save_file.close()

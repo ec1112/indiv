@@ -92,7 +92,7 @@ for f in os.listdir('../data/labeled_scaled'):
 	file_prefixes.append(f[:-4])
 
 shuffle(file_prefixes)
-NUM_EPOCHS = 1
+NUM_EPOCHS = 35
 print 'Starting CNN training ...'
 '''
 p_width = 14
